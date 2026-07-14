@@ -1,0 +1,104 @@
+CREATE OR REPLACE PACKAGE FUEL_PAYMENT_PACKAGE
+AS
+
+PROCEDURE MAKE_FUEL_PAYMENT(
+    p_card_id NUMBER,
+    p_amount NUMBER
+);
+
+FUNCTION GET_BALANCE(
+    p_card_id NUMBER
+)
+RETURN NUMBER;
+
+END FUEL_PAYMENT_PACKAGE;
+/
+CREATE OR REPLACE PACKAGE BODY FUEL_PAYMENT_PACKAGE
+AS
+
+
+PROCEDURE MAKE_FUEL_PAYMENT(
+    p_card_id NUMBER,
+    p_amount NUMBER
+)
+
+AS
+v_balance NUMBER;
+
+BEGIN
+
+SELECT Balance
+INTO v_balance
+FROM PAYMENT_CARD
+WHERE Card_ID = p_card_id;
+
+
+IF v_balance >= p_amount THEN
+
+UPDATE PAYMENT_CARD
+SET Balance = Balance - p_amount
+WHERE Card_ID = p_card_id;
+
+
+INSERT INTO FUEL_TRANSACTION
+VALUES(
+FUEL_SEQ.NEXTVAL,
+p_card_id,
+'Fuel',
+p_amount,
+SYSDATE
+);
+
+
+COMMIT;
+
+DBMS_OUTPUT.PUT_LINE('Payment Successful');
+
+
+ELSE
+
+DBMS_OUTPUT.PUT_LINE('Insufficient Balance');
+
+END IF;
+
+
+EXCEPTION
+
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE('Card not found');
+
+
+END MAKE_FUEL_PAYMENT;
+
+
+
+FUNCTION GET_BALANCE(
+p_card_id NUMBER
+)
+
+RETURN NUMBER
+
+AS
+v_balance NUMBER;
+
+BEGIN
+
+SELECT Balance
+INTO v_balance
+FROM PAYMENT_CARD
+WHERE Card_ID=p_card_id;
+
+RETURN v_balance;
+
+
+EXCEPTION
+
+WHEN NO_DATA_FOUND THEN
+RETURN 0;
+
+
+END GET_BALANCE;
+
+
+END FUEL_PAYMENT_PACKAGE;
+/
